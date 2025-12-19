@@ -11,6 +11,9 @@ export function updatePackageJson({ crateDir, outDir, js, inline }) {
   if (!pkg.exports) pkg.exports = {}
 
   const mainExports = {}
+  if (js.emit.types) {
+    mainExports.types = `${relOutDir}/node.d.ts`
+  }
   if (js.emit.browser) {
     mainExports.browser = `${relOutDir}/browser.js`
   }
@@ -25,6 +28,9 @@ export function updatePackageJson({ crateDir, outDir, js, inline }) {
 
   if (inline && js.emit.inline) {
     const inlineExports = {}
+    if (js.emit.types) {
+      inlineExports.types = `${relOutDir}/node-inline.d.ts`
+    }
     if (js.emit.browser) {
       inlineExports.browser = `${relOutDir}/browser-inline.js`
     }
@@ -38,9 +44,16 @@ export function updatePackageJson({ crateDir, outDir, js, inline }) {
     }
   }
 
-  // Also update main/module/types if they are missing?
-  // For now let's just focus on exports as it's the modern way.
+  if (js.emit.types) {
+    pkg.types = `${relOutDir}/node.d.ts`
+  }
+  if (js.emit.node) {
+    pkg.main = `${relOutDir}/node.js`
+  }
+  if (js.emit.browser) {
+    pkg.module = `${relOutDir}/browser.js`
+  }
 
   writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n')
-  console.log('Updated package.json exports')
+  console.log('Updated package.json exports and fields')
 }

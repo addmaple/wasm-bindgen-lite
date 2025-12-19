@@ -19,6 +19,7 @@ const DEFAULT_CONFIG = {
       node: true,
       browser: true,
       inline: true,
+      types: true,
     },
     custom: null, // path to custom JS file to include and re-export
   },
@@ -63,13 +64,14 @@ function readCrateName(crateDir) {
 }
 
 function normalizeEmit(value) {
-  if (!value) return { node: true, browser: true, inline: true }
+  if (!value) return { node: true, browser: true, inline: true, types: true }
   if (Array.isArray(value)) {
     const set = new Set(value)
     return {
       node: set.has('node'),
       browser: set.has('browser'),
       inline: set.has('inline'),
+      types: set.has('types') || !set.has('no-types'), // default to true if not specified
     }
   }
   if (typeof value === 'object') {
@@ -77,9 +79,10 @@ function normalizeEmit(value) {
       node: value.node !== false,
       browser: value.browser !== false,
       inline: value.inline !== false,
+      types: value.types !== false,
     }
   }
-  return { node: true, browser: true, inline: true }
+  return { node: true, browser: true, inline: true, types: true }
 }
 
 function normalizeWasmOpt(input) {

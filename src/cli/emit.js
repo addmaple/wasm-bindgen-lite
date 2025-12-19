@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -363,6 +363,62 @@ export function createCore({ exportsList, autoInit, stream }) {
   return b.toString()
 }
 
+export function createCoreTypes({ exportsList, autoInit, stream }) {
+  const needsEnsure = autoInit === 'lazy'
+  const wrappersIR = buildWrapperIR(exportsList)
+  const b = code()
+
+  b.line('export type WasmInput = Uint8Array | ArrayBufferView | ArrayBuffer;')
+  b.blank()
+
+  b.line('export function setInstance(instance: WebAssembly.Instance): void;')
+  b.line('export function wasmExports(): WebAssembly.Exports;')
+  b.line('export function memoryU8(): Uint8Array;')
+  b.line('export function alloc(len: number): number;')
+  b.line('export function free(ptr: number, len: number): void;')
+  b.blank()
+
+  wrappersIR.forEach((w) => {
+    let tsRetType
+    switch (w.returnType) {
+      case 'f32':
+      case 'f64':
+      case 'i32':
+      case 'u32':
+      case 'i16':
+      case 'u16':
+      case 'i8':
+      case 'u8':
+        tsRetType = 'number'
+        break
+      case 'u32_array':
+        tsRetType = 'Uint32Array'
+        break
+      case 'i32_array':
+        tsRetType = 'Int32Array'
+        break
+      case 'f32_array':
+        tsRetType = 'Float32Array'
+        break
+      case 'bytes':
+      default:
+        tsRetType = 'Uint8Array'
+    }
+
+    const ret = needsEnsure ? `Promise<${tsRetType}>` : tsRetType
+    b.line(`export function ${w.fnName}(input: WasmInput): ${ret};`)
+  })
+
+  if (stream?.enable) {
+    b.blank()
+    b.line(
+      'export function createTransformStream(fnName?: string): TransformStream<WasmInput, Uint8Array>;'
+    )
+  }
+
+  return b.toString()
+}
+
 export function code() {
   const lines = []
   let indent = 0
@@ -386,6 +442,12 @@ export function code() {
     },
   }
   return api
+}
+
+export function createLoaderTypes({ exportFrom }) {
+  return `export function init(imports?: WebAssembly.Imports): Promise<void>;
+export * from "${exportFrom}";
+`
 }
 
 export function createLoader({ exportFrom, autoInit, getBytesSrc }) {
@@ -502,6 +564,7 @@ export function emitRuntime({
   emitNode,
   emitBrowser,
   emitInline,
+  emitTypes,
   wasmPaths,
   exportsList,
   autoInit,
@@ -514,13 +577,35 @@ export function emitRuntime({
   if (customJs) {
     const customJsContent = readFileSync(join(process.cwd(), customJs), 'utf8')
     writeFileSync(join(outDir, 'custom.js'), customJsContent)
+
+    if (emitTypes) {
+      const customTsPath = customJs.replace(/\.js$/, '.d.ts')
+      if (existsSync(join(process.cwd(), customTsPath))) {
+        writeFileSync(
+          join(outDir, 'custom.d.ts'),
+          readFileSync(join(process.cwd(), customTsPath), 'utf8')
+        )
+      }
+    }
   }
 
   writeFileSync(
     join(outDir, 'core.js'),
     createCore({ exportsList, autoInit, stream })
   )
+  if (emitTypes) {
+    writeFileSync(
+      join(outDir, 'core.d.ts'),
+      createCoreTypes({ exportsList, autoInit, stream })
+    )
+  }
   writeFileSync(join(outDir, 'util.js'), readFileSync(UTIL_PATH, 'utf8'))
+
+  const loaderTypes = emitTypes
+    ? createLoaderTypes({
+        exportFrom: customJs ? './custom.js' : './core.js',
+      })
+    : null
 
   if (emitBrowser) {
     writeFileSync(
@@ -532,6 +617,7 @@ export function emitRuntime({
         wasmDelivery,
       })
     )
+    if (emitTypes) writeFileSync(join(outDir, 'browser.d.ts'), loaderTypes)
   }
 
   if (emitNode) {
@@ -539,6 +625,7 @@ export function emitRuntime({
       join(outDir, 'node.js'),
       createNodeLoader({ name: artifactBaseName, autoInit, customJs })
     )
+    if (emitTypes) writeFileSync(join(outDir, 'node.d.ts'), loaderTypes)
   }
 
   if (emitInline && wasmPaths.baselinePath) {
@@ -546,10 +633,13 @@ export function emitRuntime({
       join(outDir, 'browser-inline.js'),
       createInlineLoader({ name: artifactBaseName, autoInit, customJs })
     )
+    if (emitTypes)
+      writeFileSync(join(outDir, 'browser-inline.d.ts'), loaderTypes)
     writeFileSync(
       join(outDir, 'node-inline.js'),
       createInlineLoader({ name: artifactBaseName, autoInit, customJs })
     )
+    if (emitTypes) writeFileSync(join(outDir, 'node-inline.d.ts'), loaderTypes)
     writeInlineModules({
       outDir,
       artifactBaseName,

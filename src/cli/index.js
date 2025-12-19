@@ -24,6 +24,7 @@ export async function runBuild(cliOpts) {
     emitNode: cfg.js.emit.node,
     emitBrowser: cfg.js.emit.browser,
     emitInline: cfg.inline && cfg.js.emit.inline,
+    emitTypes: cfg.js.emit.types,
     wasmPaths,
     exportsList: cfg.exports,
     autoInit: cfg.autoInit,
