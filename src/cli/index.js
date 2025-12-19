@@ -19,6 +19,7 @@ export async function runBuild(cliOpts) {
   })
 
   emitRuntime({
+    crateDir: cfg.crateDir,
     outDir: cfg.outDir,
     artifactBaseName: cfg.artifactBaseName,
     emitNode: cfg.js.emit.node,

@@ -112,51 +112,55 @@ export function createCore({ exportsList, autoInit, stream }) {
   b.line('}')
   b.blank()
 
-  b.line('function scalarSize(type) {')
-  b.indent(() => {
-    b.line('switch (type) {')
-    b.line('  case "f64": return 8;')
-    b.line('  case "f32":')
-    b.line('  case "i32":')
-    b.line('  case "u32": return 4;')
-    b.line('  case "i16":')
-    b.line('  case "u16": return 2;')
-    b.line('  case "i8":')
-    b.line('  case "u8": return 1;')
-    b.line('  case "u32_array":')
-    b.line('  case "i32_array":')
-    b.line('  case "f32_array": return 1024 * 1024;')
-    b.line('  default: return 0;')
-    b.line('}')
-  })
-  b.line('}')
-  b.blank()
+  const needsDecoders = wrappersIR.some((w) => w.returnType !== 'bytes')
 
-  b.line('function decodeReturn(view, type) {')
-  b.indent(() => {
-    b.line('switch (type) {')
-    b.line('  case "f32": return view.getFloat32(0, true);')
-    b.line('  case "f64": return view.getFloat64(0, true);')
-    b.line('  case "i32": return view.getInt32(0, true);')
-    b.line('  case "u32": return view.getUint32(0, true);')
-    b.line('  case "i16": return view.getInt16(0, true);')
-    b.line('  case "u16": return view.getUint16(0, true);')
-    b.line('  case "i8": return view.getInt8(0);')
-    b.line('  case "u8": return view.getUint8(0);')
-    b.line(
-      '  case "u32_array": return new Uint32Array(view.buffer.slice(view.byteOffset, view.byteOffset + view.byteLength));'
-    )
-    b.line(
-      '  case "i32_array": return new Int32Array(view.buffer.slice(view.byteOffset, view.byteOffset + view.byteLength));'
-    )
-    b.line(
-      '  case "f32_array": return new Float32Array(view.buffer.slice(view.byteOffset, view.byteOffset + view.byteLength));'
-    )
-    b.line('  default: return null;')
+  if (needsDecoders) {
+    b.line('function scalarSize(type) {')
+    b.indent(() => {
+      b.line('switch (type) {')
+      b.line('  case "f64": return 8;')
+      b.line('  case "f32":')
+      b.line('  case "i32":')
+      b.line('  case "u32": return 4;')
+      b.line('  case "i16":')
+      b.line('  case "u16": return 2;')
+      b.line('  case "i8":')
+      b.line('  case "u8": return 1;')
+      b.line('  case "u32_array":')
+      b.line('  case "i32_array":')
+      b.line('  case "f32_array": return 1024 * 1024;')
+      b.line('  default: return 0;')
+      b.line('}')
+    })
     b.line('}')
-  })
-  b.line('}')
-  b.blank()
+    b.blank()
+
+    b.line('function decodeReturn(view, type) {')
+    b.indent(() => {
+      b.line('switch (type) {')
+      b.line('  case "f32": return view.getFloat32(0, true);')
+      b.line('  case "f64": return view.getFloat64(0, true);')
+      b.line('  case "i32": return view.getInt32(0, true);')
+      b.line('  case "u32": return view.getUint32(0, true);')
+      b.line('  case "i16": return view.getInt16(0, true);')
+      b.line('  case "u16": return view.getUint16(0, true);')
+      b.line('  case "i8": return view.getInt8(0);')
+      b.line('  case "u8": return view.getUint8(0);')
+      b.line(
+        '  case "u32_array": return new Uint32Array(view.buffer.slice(view.byteOffset, view.byteOffset + view.byteLength));'
+      )
+      b.line(
+        '  case "i32_array": return new Int32Array(view.buffer.slice(view.byteOffset, view.byteOffset + view.byteLength));'
+      )
+      b.line(
+        '  case "f32_array": return new Float32Array(view.buffer.slice(view.byteOffset, view.byteOffset + view.byteLength));'
+      )
+      b.line('  default: return null;')
+      b.line('}')
+    })
+    b.line('}')
+    b.blank()
+  }
 
   b.line('function callWasm(abi, input, outLen, reuse) {')
   b.indent(() => {
@@ -559,6 +563,7 @@ function writeInlineModules({
 }
 
 export function emitRuntime({
+  crateDir,
   outDir,
   artifactBaseName,
   emitNode,
@@ -575,15 +580,15 @@ export function emitRuntime({
   mkdirSync(outDir, { recursive: true })
 
   if (customJs) {
-    const customJsContent = readFileSync(join(process.cwd(), customJs), 'utf8')
+    const customJsContent = readFileSync(join(crateDir, customJs), 'utf8')
     writeFileSync(join(outDir, 'custom.js'), customJsContent)
 
     if (emitTypes) {
       const customTsPath = customJs.replace(/\.js$/, '.d.ts')
-      if (existsSync(join(process.cwd(), customTsPath))) {
+      if (existsSync(join(crateDir, customTsPath))) {
         writeFileSync(
           join(outDir, 'custom.d.ts'),
-          readFileSync(join(process.cwd(), customTsPath), 'utf8')
+          readFileSync(join(crateDir, customTsPath), 'utf8')
         )
       }
     }
