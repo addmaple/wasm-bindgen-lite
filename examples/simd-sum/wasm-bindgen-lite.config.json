@@ -1,0 +1,11 @@
+{
+  "outDir": "dist",
+  "artifactBaseName": "sum",
+  "exports": [
+    { "abi": "sum_u8_bytes", "name": "sumU8", "return": "f32", "reuseBuffer": true },
+    { "abi": "sum_u16_bytes", "name": "sumU16", "return": "f32", "reuseBuffer": true },
+    { "abi": "sum_f32_bytes", "name": "sumF32", "return": "f32", "reuseBuffer": true }
+  ],
+  "autoInit": "lazy",
+  "stream": { "enable": false, "export": "sumF32" }
+}

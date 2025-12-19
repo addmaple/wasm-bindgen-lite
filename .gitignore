@@ -1,0 +1,40 @@
+# Rust
+target/
+**/*.rs.bk
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Build artifacts
+dist/
+wasm-dist/
+dist-wasm-bindgen-lite/
+**/*.wasm
+**/*.wasm.js
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.cursor/
+.idea/
+*.swp
+*.swo
+
+# Examples specific
+examples/**/target/
+examples/**/node_modules/
+examples/**/dist/
+examples/**/wasm-dist/
+
+# Test results and benchmarking
+test-results/
+**/test-results/
+**/large_bench.txt
+**/large_bench.bin

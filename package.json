@@ -1,0 +1,60 @@
+{
+  "name": "wasm-bindgen-lite",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "CLI tool to build Rust crates into minimal, SIMD-optimized WASM packages with JS loaders",
+  "files": [
+    "bin/",
+    "src/",
+    "scripts/",
+    "Cargo.toml",
+    "Cargo.lock",
+    "README.md",
+    "LICENSE"
+  ],
+  "bin": {
+    "wasm-bindgen-lite": "./bin/wasm-bindgen-lite.js"
+  },
+  "main": "./src/cli/index.js",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "build": "node bin/wasm-bindgen-lite.js build --crate . --out dist",
+    "test": "cargo test && node scripts/test.js",
+    "test:examples": "./scripts/test-examples.sh",
+    "lint": "npm run lint:js && npm run lint:rust",
+    "lint:js": "eslint . && prettier --check .",
+    "lint:rust": "cargo clippy --workspace -- -D warnings",
+    "format": "prettier --write . && cargo fmt"
+  },
+  "keywords": [
+    "wasm",
+    "rust",
+    "simd",
+    "minimal",
+    "loader"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "base64-js": "^1.5.1",
+    "eslint": "^9.39.2",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
+    "globals": "^16.5.0",
+    "prettier": "^3.7.4"
+  },
+  "exports": {
+    ".": {
+      "browser": "./dist/browser.js",
+      "node": "./dist/node.js",
+      "default": "./dist/node.js"
+    },
+    "./inline": {
+      "browser": "./dist/browser-inline.js",
+      "node": "./dist/node-inline.js",
+      "default": "./dist/node-inline.js"
+    }
+  }
+}

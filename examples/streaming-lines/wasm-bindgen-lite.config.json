@@ -1,0 +1,12 @@
+{
+  "outDir": "dist",
+  "artifactBaseName": "lines",
+  "exports": [
+    { "abi": "split_lines_chunk", "name": "splitLines", "reuseBuffer": true }
+  ],
+  "autoInit": "lazy",
+  "stream": { "enable": true, "export": "splitLines", "delimiter": 0 },
+  "js": {
+    "custom": "src/lib.js"
+  }
+}

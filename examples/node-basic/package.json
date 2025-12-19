@@ -1,0 +1,24 @@
+{
+  "name": "wasm-bindgen-lite-example-node",
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "build:wasm": "wasm-bindgen-lite build --crate . --out ./dist",
+    "test": "node test.js"
+  },
+  "devDependencies": {
+    "wasm-bindgen-lite": "file:../.."
+  },
+  "exports": {
+    ".": {
+      "browser": "./dist/browser.js",
+      "node": "./dist/node.js",
+      "default": "./dist/node.js"
+    },
+    "./inline": {
+      "browser": "./dist/browser-inline.js",
+      "node": "./dist/node-inline.js",
+      "default": "./dist/node-inline.js"
+    }
+  }
+}

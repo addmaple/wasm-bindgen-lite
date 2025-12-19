@@ -1,0 +1,5 @@
+hello\r
+world
+partial line
+second line\r
+third

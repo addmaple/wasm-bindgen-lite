@@ -1,0 +1,16 @@
+{
+  "outDir": "dist",
+  "artifactBaseName": "offsets",
+  "exports": [
+    {
+      "abi": "find_line_offsets",
+      "name": "findOffsets",
+      "return": "u32_array",
+      "reuseBuffer": true
+    }
+  ],
+  "autoInit": "lazy",
+  "js": {
+    "custom": "src/lib.js"
+  }
+}

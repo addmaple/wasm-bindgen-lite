@@ -1,0 +1,6 @@
+{
+  "outDir": "wasm-dist",
+  "artifactBaseName": "mod",
+  "autoInit": "lazy",
+  "exports": [{ "abi": "process_bytes", "name": "process", "return": "bytes" }]
+}

@@ -1,0 +1,21 @@
+{
+  "name": "wasm-bindgen-lite-example-browser",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:wasm": "wasm-bindgen-lite build --crate . --out ./wasm-dist",
+    "dev": "vite",
+    "build": "npm run build:wasm && vite build",
+    "preview": "vite preview",
+    "test": "npm run test:pw",
+    "test:pw": "playwright test"
+  },
+  "dependencies": {
+    "wasm-bindgen-lite": "file:../.."
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.57.0",
+    "vite": "^5.4.0"
+  }
+}

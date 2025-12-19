@@ -1,0 +1,22 @@
+[package]
+name = "wasm-bindgen-lite"
+version = "0.1.0"
+edition = "2021"
+description = "CLI tool and runtime to build Rust crates into minimal, SIMD-optimized WASM packages with JS loaders"
+license = "MIT"
+
+[workspace]
+members = ["examples/*"]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+
