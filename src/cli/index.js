@@ -32,13 +32,15 @@ export async function runBuild(cliOpts) {
     wasmDelivery: cfg.wasmDelivery,
   })
 
-  updatePackageJson({
-    crateDir: cfg.crateDir,
-    outDir: cfg.outDir,
-    artifactBaseName: cfg.artifactBaseName,
-    js: cfg.js,
-    inline: cfg.inline,
-  })
+  if (cliOpts.updatePackageJson !== false) {
+    updatePackageJson({
+      crateDir: cfg.crateDir,
+      outDir: cfg.outDir,
+      artifactBaseName: cfg.artifactBaseName,
+      js: cfg.js,
+      inline: cfg.inline,
+    })
+  }
 
   console.log('Build complete:', cfg.outDir)
 }
@@ -71,6 +73,7 @@ Options (for build):
   --simd | --no-simd     Build SIMD variant (default: simd on)
   --wasm-opt | --no-wasm-opt  Force enable/disable wasm-opt (default: auto detect)
   --wasm-opt-args "<args>"    Extra args, default "-Oz"
+  --no-update-package-json     Do not modify package.json exports (default: updates if package.json exists)
 `
   console.log(help)
 }

@@ -3,6 +3,14 @@
   "version": "0.1.0",
   "type": "module",
   "description": "CLI tool to build Rust crates into minimal, SIMD-optimized WASM packages with JS loaders",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/addmaple/wasm-bindgen-lite.git"
+  },
+  "homepage": "https://github.com/addmaple/wasm-bindgen-lite#readme",
+  "bugs": {
+    "url": "https://github.com/addmaple/wasm-bindgen-lite/issues"
+  },
   "files": [
     "bin/",
     "src/",
@@ -20,7 +28,7 @@
     "node": ">=20.0.0"
   },
   "scripts": {
-    "build": "node bin/wasm-bindgen-lite.js build --crate . --out dist",
+    "build": "node bin/wasm-bindgen-lite.js build --crate . --out dist --no-update-package-json",
     "test": "cargo test && node scripts/test.js",
     "test:examples": "./scripts/test-examples.sh",
     "lint": "npm run lint:js && npm run lint:rust",
@@ -46,15 +54,6 @@
     "prettier": "^3.7.4"
   },
   "exports": {
-    ".": {
-      "browser": "./dist/browser.js",
-      "node": "./dist/node.js",
-      "default": "./dist/node.js"
-    },
-    "./inline": {
-      "browser": "./dist/browser-inline.js",
-      "node": "./dist/node-inline.js",
-      "default": "./dist/node-inline.js"
-    }
+    ".": "./src/cli/index.js"
   }
 }

@@ -45,6 +45,12 @@ function parseArgs(raw) {
       case '--wasm-opt-args':
         opts.wasmOptArgs = (rest[++i] || '').split(' ').filter(Boolean)
         break
+      case '--update-package-json':
+        opts.updatePackageJson = true
+        break
+      case '--no-update-package-json':
+        opts.updatePackageJson = false
+        break
       case '--help':
       case '-h':
         opts.help = true

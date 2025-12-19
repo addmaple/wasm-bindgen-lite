@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 description = "CLI tool and runtime to build Rust crates into minimal, SIMD-optimized WASM packages with JS loaders"
 license = "MIT"
+repository = "https://github.com/addmaple/wasm-bindgen-lite"
 
 [workspace]
 members = ["examples/*"]
