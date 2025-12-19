@@ -55,11 +55,11 @@ npm run bench
 The high-level API provided by this example:
 
 ```javascript
-import { init, getLines } from './dist/node.js';
+import { init, getLines } from './dist/node.js'
 
-await init();
+await init()
 
-const buffer = new TextEncoder().encode("line1\nline2\r\nline3");
-const lines = await getLines(buffer); 
+const buffer = new TextEncoder().encode('line1\nline2\r\nline3')
+const lines = await getLines(buffer)
 // ["line1", "line2", "line3"]
 ```

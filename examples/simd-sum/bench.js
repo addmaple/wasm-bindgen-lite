@@ -1,5 +1,5 @@
 import { performance } from 'node:perf_hooks'
-import { init, sumF32 } from './dist/node.js'
+import { sumF32 } from './dist/node.js'
 
 function makeData(len) {
   const arr = new Float32Array(len)

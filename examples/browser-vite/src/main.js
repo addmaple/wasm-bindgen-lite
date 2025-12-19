@@ -1,4 +1,4 @@
-import { init, process } from '../wasm-dist/browser.js'
+import { process } from '../wasm-dist/browser.js'
 
 const statusEl = document.querySelector('#status')
 const workerStatusEl = document.querySelector('#worker-status')

@@ -39,9 +39,9 @@ npm test
 The generated API is simple and promise-based:
 
 ```javascript
-import { process } from './dist/node.js';
+import { process } from './dist/node.js'
 
 // Input:  [1, 2, 3]
 // Output: [3, 4, 5]
-const output = await process(new Uint8Array([1, 2, 3]));
+const output = await process(new Uint8Array([1, 2, 3]))
 ```

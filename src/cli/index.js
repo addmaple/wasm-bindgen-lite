@@ -36,7 +36,6 @@ export async function runBuild(cliOpts) {
     updatePackageJson({
       crateDir: cfg.crateDir,
       outDir: cfg.outDir,
-      artifactBaseName: cfg.artifactBaseName,
       js: cfg.js,
       inline: cfg.inline,
     })

@@ -58,7 +58,7 @@ try {
   run(
     `wasm-opt -Oz ${join(DIST, 'wasm/mod.simd.wasm')} -o ${join(DIST, 'wasm/mod.simd.wasm')}`
   )
-} catch (e) {
+} catch {
   console.warn('wasm-opt not found, skipping optimization.')
 }
 

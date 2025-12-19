@@ -29,7 +29,8 @@
   },
   "scripts": {
     "build": "node bin/wasm-bindgen-lite.js build --crate . --out dist --no-update-package-json",
-    "test": "cargo test && node scripts/test.js",
+    "test": "npm run test:unit && cargo test && node scripts/test.js",
+    "test:unit": "node --test test/*.test.js",
     "test:examples": "./scripts/test-examples.sh",
     "lint": "npm run lint:js && npm run lint:rust",
     "lint:js": "eslint . && prettier --check .",

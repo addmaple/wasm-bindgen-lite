@@ -23,3 +23,4 @@ for dir in examples/*; do
     cd ../..
   fi
 done
+

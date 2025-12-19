@@ -1,13 +1,7 @@
 import { readFileSync, writeFileSync, existsSync } from 'node:fs'
 import { join, relative } from 'node:path'
 
-export function updatePackageJson({
-  crateDir,
-  outDir,
-  artifactBaseName,
-  js,
-  inline,
-}) {
+export function updatePackageJson({ crateDir, outDir, js, inline }) {
   const pkgPath = join(crateDir, 'package.json')
   if (!existsSync(pkgPath)) return
 

@@ -47,13 +47,15 @@ pub unsafe extern "C" fn find_line_offsets(
             } else {
                 // Process these 16 bytes
                 for _ in 0..16 {
-                    if i >= in_len || count >= max_offsets { break; }
+                    if i >= in_len || count >= max_offsets {
+                        break;
+                    }
                     let b = input[i];
                     if b == b'\n' {
                         *out_ptr.add(count) = i as u32;
                         count += 1;
                     } else if b == b'\r' {
-                        if i + 1 < in_len && input[i+1] == b'\n' {
+                        if i + 1 < in_len && input[i + 1] == b'\n' {
                             *out_ptr.add(count) = i as u32;
                             count += 1;
                             i += 1; // skip \n
@@ -74,7 +76,7 @@ pub unsafe extern "C" fn find_line_offsets(
             *out_ptr.add(count) = i as u32;
             count += 1;
         } else if b == b'\r' {
-            if i + 1 < in_len && input[i+1] == b'\n' {
+            if i + 1 < in_len && input[i + 1] == b'\n' {
                 *out_ptr.add(count) = i as u32;
                 count += 1;
                 i += 1;

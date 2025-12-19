@@ -2,6 +2,15 @@ import { execSync } from 'node:child_process'
 import { copyFileSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 
+function exec(cmd, options = {}) {
+  try {
+    execSync(cmd, { stdio: 'inherit', ...options })
+  } catch {
+    console.error(`\nError: Command failed: ${cmd}`)
+    process.exit(1)
+  }
+}
+
 function runCargoBuild({ crateDir, release, simd }) {
   const args = ['build', '--target', 'wasm32-unknown-unknown']
   if (release) args.push('--release')
@@ -13,9 +22,8 @@ function runCargoBuild({ crateDir, release, simd }) {
     env.RUSTFLAGS = [base, extra].filter(Boolean).join(' ').trim()
   }
 
-  execSync(`cargo ${args.join(' ')}`, {
+  exec(`cargo ${args.join(' ')}`, {
     cwd: crateDir,
-    stdio: 'inherit',
     env,
   })
 }
@@ -42,7 +50,7 @@ function maybeRunWasmOpt(wasmFile, wasmOpt) {
   }
 
   const args = ['wasm-opt', ...wasmOpt.args, wasmFile, '-o', wasmFile]
-  execSync(args.join(' '), { stdio: 'inherit' })
+  exec(args.join(' '))
 }
 
 export function buildArtifacts({
@@ -58,26 +66,24 @@ export function buildArtifacts({
   const wasmOutDir = join(outDir, 'wasm')
   mkdirSync(wasmOutDir, { recursive: true })
 
-  let baselinePath = null
-  let simdPath = null
+  const paths = { baselinePath: null, simdPath: null, wasmOutDir }
 
-  if (targets.baseline) {
-    console.log('Building baseline wasm...')
-    runCargoBuild({ crateDir, release, simd: false })
+  const build = (isSimd, suffix) => {
+    const label = isSimd ? 'SIMD' : 'baseline'
+    console.log(`Building ${label} wasm...`)
+
+    runCargoBuild({ crateDir, release, simd: isSimd })
+
     const built = wasmPath({ crateDir, release, wasmFileStem })
-    baselinePath = join(wasmOutDir, `${artifactBaseName}.base.wasm`)
-    copyFileSync(built, baselinePath)
-    maybeRunWasmOpt(baselinePath, wasmOpt)
+    const dest = join(wasmOutDir, `${artifactBaseName}.${suffix}.wasm`)
+
+    copyFileSync(built, dest)
+    maybeRunWasmOpt(dest, wasmOpt)
+    return dest
   }
 
-  if (targets.simd) {
-    console.log('Building SIMD wasm...')
-    runCargoBuild({ crateDir, release, simd: true })
-    const built = wasmPath({ crateDir, release, wasmFileStem })
-    simdPath = join(wasmOutDir, `${artifactBaseName}.simd.wasm`)
-    copyFileSync(built, simdPath)
-    maybeRunWasmOpt(simdPath, wasmOpt)
-  }
+  if (targets.baseline) paths.baselinePath = build(false, 'base')
+  if (targets.simd) paths.simdPath = build(true, 'simd')
 
-  return { baselinePath, simdPath, wasmOutDir }
+  return paths
 }

@@ -104,90 +104,81 @@ export function loadConfigFromCli(cliOpts = {}) {
   }
 
   const crateName = readCrateName(crateDir)
-  const artifactBaseName =
-    cliOpts.artifactBaseName ??
-    fileConfig.artifactBaseName ??
-    DEFAULT_CONFIG.artifactBaseName
 
-  const outDir = resolve(
-    crateDir,
-    cliOpts.out ?? fileConfig.outDir ?? DEFAULT_CONFIG.outDir
-  )
-
-  const release =
-    typeof cliOpts.release === 'boolean'
-      ? cliOpts.release
-      : (fileConfig.release ?? DEFAULT_CONFIG.release)
-
-  const targets = {
-    baseline:
-      cliOpts.baseline ??
-      fileConfig.targets?.baseline ??
-      DEFAULT_CONFIG.targets.baseline,
-    simd:
-      typeof cliOpts.simd === 'boolean'
-        ? cliOpts.simd
-        : (fileConfig.targets?.simd ?? DEFAULT_CONFIG.targets.simd),
-  }
-
-  const inline =
-    typeof cliOpts.inline === 'boolean'
-      ? cliOpts.inline
-      : (fileConfig.inline ?? DEFAULT_CONFIG.inline)
-
-  const wasmOpt = normalizeWasmOpt(
-    cliOpts.wasmOptMode
-      ? { mode: cliOpts.wasmOptMode, args: cliOpts.wasmOptArgs }
-      : (fileConfig.wasmOpt ?? DEFAULT_CONFIG.wasmOpt)
-  )
-
-  const jsEmit = normalizeEmit(fileConfig.js?.emit ?? DEFAULT_CONFIG.js.emit)
-  const jsCustom = fileConfig.js?.custom ?? DEFAULT_CONFIG.js.custom
-
-  const exportsList =
-    fileConfig.exports &&
-    Array.isArray(fileConfig.exports) &&
-    fileConfig.exports.length
-      ? fileConfig.exports
-      : DEFAULT_CONFIG.exports
-
-  const autoInit =
-    fileConfig.autoInit === 'lazy' ||
-    fileConfig.autoInit === 'eager' ||
-    fileConfig.autoInit === 'off'
-      ? fileConfig.autoInit
-      : DEFAULT_CONFIG.autoInit
-
-  const streamCfg = {
-    enable: fileConfig.stream?.enable ?? DEFAULT_CONFIG.stream.enable,
-    export:
-      fileConfig.stream?.export ??
-      exportsList[0]?.name ??
-      DEFAULT_CONFIG.stream.export,
-    delimiter: fileConfig.stream?.delimiter ?? DEFAULT_CONFIG.stream.delimiter,
-  }
-
-  const wasmDelivery = {
-    type: fileConfig.wasmDelivery?.type ?? DEFAULT_CONFIG.wasmDelivery.type,
-    package: fileConfig.wasmDelivery?.package ?? fileConfig.name ?? crateName,
-    version: fileConfig.wasmDelivery?.version ?? fileConfig.version ?? 'latest',
-  }
-
+  // Merge defaults, file config, and CLI options
   const config = {
     crateDir,
     crateName,
     wasmFileStem: crateName.replace(/-/g, '_'),
-    artifactBaseName,
-    outDir,
-    release,
-    inline,
-    targets,
-    wasmOpt,
-    js: { emit: jsEmit, custom: jsCustom },
-    exports: exportsList,
-    autoInit,
-    stream: streamCfg,
-    wasmDelivery,
+
+    artifactBaseName:
+      cliOpts.artifactBaseName ??
+      fileConfig.artifactBaseName ??
+      DEFAULT_CONFIG.artifactBaseName,
+
+    outDir: resolve(
+      crateDir,
+      cliOpts.out ?? fileConfig.outDir ?? DEFAULT_CONFIG.outDir
+    ),
+
+    release:
+      typeof cliOpts.release === 'boolean'
+        ? cliOpts.release
+        : (fileConfig.release ?? DEFAULT_CONFIG.release),
+
+    targets: {
+      baseline:
+        cliOpts.baseline ??
+        fileConfig.targets?.baseline ??
+        DEFAULT_CONFIG.targets.baseline,
+      simd:
+        typeof cliOpts.simd === 'boolean'
+          ? cliOpts.simd
+          : (fileConfig.targets?.simd ?? DEFAULT_CONFIG.targets.simd),
+    },
+
+    inline:
+      typeof cliOpts.inline === 'boolean'
+        ? cliOpts.inline
+        : (fileConfig.inline ?? DEFAULT_CONFIG.inline),
+
+    wasmOpt: normalizeWasmOpt(
+      cliOpts.wasmOptMode
+        ? { mode: cliOpts.wasmOptMode, args: cliOpts.wasmOptArgs }
+        : (fileConfig.wasmOpt ?? DEFAULT_CONFIG.wasmOpt)
+    ),
+
+    js: {
+      emit: normalizeEmit(fileConfig.js?.emit ?? DEFAULT_CONFIG.js.emit),
+      custom: fileConfig.js?.custom ?? DEFAULT_CONFIG.js.custom,
+    },
+
+    exports:
+      fileConfig.exports && Array.isArray(fileConfig.exports)
+        ? fileConfig.exports
+        : DEFAULT_CONFIG.exports,
+
+    autoInit: ['lazy', 'eager', 'off'].includes(fileConfig.autoInit)
+      ? fileConfig.autoInit
+      : DEFAULT_CONFIG.autoInit,
+
+    stream: {
+      enable: fileConfig.stream?.enable ?? DEFAULT_CONFIG.stream.enable,
+      export:
+        fileConfig.stream?.export ??
+        fileConfig.exports?.[0]?.name ??
+        DEFAULT_CONFIG.stream.export,
+      delimiter:
+        fileConfig.stream?.delimiter ?? DEFAULT_CONFIG.stream.delimiter,
+      blockSize: fileConfig.stream?.blockSize ?? null,
+    },
+
+    wasmDelivery: {
+      type: fileConfig.wasmDelivery?.type ?? DEFAULT_CONFIG.wasmDelivery.type,
+      package: fileConfig.wasmDelivery?.package ?? fileConfig.name ?? crateName,
+      version:
+        fileConfig.wasmDelivery?.version ?? fileConfig.version ?? 'latest',
+    },
   }
 
   return config

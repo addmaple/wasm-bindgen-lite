@@ -1,4 +1,4 @@
-import { init, process } from '../wasm-dist/browser.js'
+import { process } from '../wasm-dist/browser.js'
 
 self.onmessage = async (e) => {
   try {
