@@ -56,5 +56,8 @@
   },
   "exports": {
     ".": "./src/cli/index.js"
+  },
+  "dependencies": {
+    "typescript": "^5.9.3"
   }
 }

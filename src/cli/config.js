@@ -21,7 +21,7 @@ const DEFAULT_CONFIG = {
       inline: true,
       types: true,
     },
-    custom: null, // path to custom JS file to include and re-export
+    custom: null, // path to custom JS/TS file to include and re-export
   },
   exports: [
     {

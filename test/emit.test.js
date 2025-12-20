@@ -1,10 +1,14 @@
 import test from 'node:test'
 import assert from 'node:assert'
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import {
   code,
   buildWrapperIR,
   createCore,
   createLoader,
+  emitRuntime,
 } from '../src/cli/emit.js'
 
 test('code builder should manage indentation and blank lines', () => {
@@ -112,5 +116,43 @@ test('streaming logic should be included when enabled', () => {
   assert.ok(coreCode.includes('export function createChunkTransform'))
   assert.ok(coreCode.includes('export function createTransformStream'))
   assert.ok(coreCode.includes('const __exports = {'))
+})
+
+test('emitRuntime should transpile custom TypeScript runtime', () => {
+  const tempRoot = mkdtempSync(join(tmpdir(), 'wbl-'))
+  const crateDir = join(tempRoot, 'crate')
+  const outDir = join(tempRoot, 'out')
+
+  mkdirSync(crateDir, { recursive: true })
+
+  writeFileSync(
+    join(crateDir, 'custom.ts'),
+    `
+export function greet(name: string) {
+  return \`hi \${name}\`;
+}
+`
+  )
+
+  emitRuntime({
+    crateDir,
+    outDir,
+    artifactBaseName: 'mod',
+    emitNode: false,
+    emitBrowser: false,
+    emitInline: false,
+    emitTypes: false,
+    wasmPaths: { baselinePath: null, simdPath: null },
+    exportsList: [],
+    autoInit: 'off',
+    stream: { enable: false, export: '', delimiter: null, blockSize: null },
+    customJs: 'custom.ts',
+    wasmDelivery: { type: 'relative', package: 'demo', version: 'latest' },
+  })
+
+  const emitted = readFileSync(join(outDir, 'custom.js'), 'utf8')
+  assert.ok(emitted.includes('export function greet(name)'), 'transpiles TS to JS')
+
+  rmSync(tempRoot, { recursive: true, force: true })
 })
 

@@ -1,8 +1,11 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs'
-import { join } from 'node:path'
+import { join, extname } from 'node:path'
+import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 
 const UTIL_PATH = fileURLToPath(new URL('../js/util.js', import.meta.url))
+const require = createRequire(import.meta.url)
+const TS_EXTS = new Set(['.ts', '.tsx', '.cts', '.mts'])
 
 export function buildWrapperIR(exportsList) {
   return exportsList.map((entry) => {
@@ -540,6 +543,38 @@ export const wasmBytes = new Uint8Array([${bytes.join(',')}]);
 `
 }
 
+function loadCustomModule(crateDir, customJs) {
+  const customPath = join(crateDir, customJs)
+  const source = readFileSync(customPath, 'utf8')
+  const ext = extname(customJs).toLowerCase()
+
+  if (!TS_EXTS.has(ext)) return source
+
+  let ts
+  try {
+    ts = require('typescript')
+  } catch {
+    throw new Error(
+      "Custom TypeScript runtime requires the 'typescript' package. Install it with `npm install typescript` in your project."
+    )
+  }
+
+  const { outputText } = ts.transpileModule(source, {
+    fileName: customPath,
+    compilerOptions: {
+      module: ts.ModuleKind.ESNext,
+      target: ts.ScriptTarget.ES2020,
+      jsx: ts.JsxEmit.ReactJSX,
+      esModuleInterop: true,
+      allowSyntheticDefaultImports: true,
+      sourceMap: false,
+    },
+    reportDiagnostics: false,
+  })
+
+  return outputText
+}
+
 function writeInlineModules({
   outDir,
   artifactBaseName,
@@ -580,11 +615,11 @@ export function emitRuntime({
   mkdirSync(outDir, { recursive: true })
 
   if (customJs) {
-    const customJsContent = readFileSync(join(crateDir, customJs), 'utf8')
+    const customJsContent = loadCustomModule(crateDir, customJs)
     writeFileSync(join(outDir, 'custom.js'), customJsContent)
 
     if (emitTypes) {
-      const customTsPath = customJs.replace(/\.js$/, '.d.ts')
+      const customTsPath = customJs.replace(/\.[^.]+$/, '.d.ts')
       if (existsSync(join(crateDir, customTsPath))) {
         writeFileSync(
           join(outDir, 'custom.d.ts'),
