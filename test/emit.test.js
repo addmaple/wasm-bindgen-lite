@@ -113,3 +113,4 @@ test('streaming logic should be included when enabled', () => {
   assert.ok(coreCode.includes('export function createTransformStream'))
   assert.ok(coreCode.includes('const __exports = {'))
 })
+

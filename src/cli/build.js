@@ -11,7 +11,23 @@ function exec(cmd, options = {}) {
   }
 }
 
-function runCargoBuild({ crateDir, release, simd }) {
+function resolveTargetDir(crateDir) {
+  try {
+    const raw = execSync('cargo metadata --format-version 1 --no-deps', {
+      cwd: crateDir,
+      stdio: ['ignore', 'pipe', 'inherit'],
+    }).toString()
+    const meta = JSON.parse(raw)
+    if (meta?.target_directory) return meta.target_directory
+  } catch {
+    console.warn(
+      'Warning: failed to read cargo metadata, defaulting to local target dir'
+    )
+  }
+  return join(crateDir, 'target')
+}
+
+function runCargoBuild({ crateDir, release, simd, targetDir }) {
   const args = ['build', '--target', 'wasm32-unknown-unknown']
   if (release) args.push('--release')
 
@@ -21,6 +37,9 @@ function runCargoBuild({ crateDir, release, simd }) {
     const extra = '-C target-feature=+simd128'
     env.RUSTFLAGS = [base, extra].filter(Boolean).join(' ').trim()
   }
+  if (targetDir) {
+    env.CARGO_TARGET_DIR = targetDir
+  }
 
   exec(`cargo ${args.join(' ')}`, {
     cwd: crateDir,
@@ -28,11 +47,10 @@ function runCargoBuild({ crateDir, release, simd }) {
   })
 }
 
-function wasmPath({ crateDir, release, wasmFileStem }) {
+function wasmPath({ targetDir, release, wasmFileStem }) {
   const profile = release ? 'release' : 'debug'
   return join(
-    crateDir,
-    'target',
+    targetDir,
     'wasm32-unknown-unknown',
     profile,
     `${wasmFileStem}.wasm`
@@ -62,6 +80,7 @@ export function buildArtifacts({
   release,
   wasmOpt,
 }) {
+  const targetDir = resolveTargetDir(crateDir)
   mkdirSync(outDir, { recursive: true })
   const wasmOutDir = join(outDir, 'wasm')
   mkdirSync(wasmOutDir, { recursive: true })
@@ -72,9 +91,9 @@ export function buildArtifacts({
     const label = isSimd ? 'SIMD' : 'baseline'
     console.log(`Building ${label} wasm...`)
 
-    runCargoBuild({ crateDir, release, simd: isSimd })
+    runCargoBuild({ crateDir, release, simd: isSimd, targetDir })
 
-    const built = wasmPath({ crateDir, release, wasmFileStem })
+    const built = wasmPath({ targetDir, release, wasmFileStem })
     const dest = join(wasmOutDir, `${artifactBaseName}.${suffix}.wasm`)
 
     copyFileSync(built, dest)
