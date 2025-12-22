@@ -27,13 +27,25 @@ function resolveTargetDir(crateDir) {
   return join(crateDir, 'target')
 }
 
-function runCargoBuild({ crateDir, release, simd, targetDir }) {
+function runCargoBuild({ crateDir, release, simd, targetDir, features }) {
   const args = ['build', '--target', 'wasm32-unknown-unknown']
   if (release) args.push('--release')
+  if (features) {
+    args.push('--features', features)
+  }
 
   const env = { ...process.env }
+
+  if (release) {
+    // Explicitly force opt-level 3 for fastest execution
+    env.CARGO_PROFILE_RELEASE_OPT_LEVEL = '3'
+    env.CARGO_PROFILE_RELEASE_PANIC = 'abort'
+    env.CARGO_PROFILE_RELEASE_CODEGEN_UNITS = '1'
+    env.CARGO_PROFILE_RELEASE_LTO = 'fat'
+  }
+
   if (simd) {
-    const base = process.env.RUSTFLAGS || ''
+    const base = env.RUSTFLAGS || ''
     const extra = '-C target-feature=+simd128'
     env.RUSTFLAGS = [base, extra].filter(Boolean).join(' ').trim()
   }
@@ -57,7 +69,7 @@ function wasmPath({ targetDir, release, wasmFileStem }) {
   )
 }
 
-function maybeRunWasmOpt(wasmFile, wasmOpt) {
+function maybeRunWasmOpt(wasmFile, wasmOpt, release) {
   if (wasmOpt.mode === 'off') return
   if (wasmOpt.mode === 'auto') {
     try {
@@ -67,7 +79,24 @@ function maybeRunWasmOpt(wasmFile, wasmOpt) {
     }
   }
 
-  const args = ['wasm-opt', ...wasmOpt.args, wasmFile, '-o', wasmFile]
+  const args = ['wasm-opt']
+
+  if (release) {
+    // Only strip metadata and debug info for fastest performance
+    args.push('--strip-debug')
+    args.push('--strip-producers')
+    args.push('--strip-target-features')
+    
+    // We EXPLICITLY avoid -O passes here to maintain absolute fastest speed
+    // unless the user provided specific args
+    if (wasmOpt.args.length > 0) {
+      args.push(...wasmOpt.args)
+    }
+  } else {
+    args.push(...wasmOpt.args)
+  }
+
+  args.push(wasmFile, '-o', wasmFile)
   exec(args.join(' '))
 }
 
@@ -91,7 +120,11 @@ export function buildArtifacts({
     const label = isSimd ? 'SIMD' : 'baseline'
     console.log(`Building ${label} wasm...`)
 
-    runCargoBuild({ crateDir, release, simd: isSimd, targetDir })
+    const simdFeatures = isSimd ? targets.simdFeatures : null
+    const baselineFeatures = !isSimd ? targets.baselineFeatures : null
+    const features = simdFeatures || baselineFeatures
+
+    runCargoBuild({ crateDir, release, simd: isSimd, targetDir, features })
 
     const built = wasmPath({ targetDir, release, wasmFileStem })
     const dest = join(wasmOutDir, `${artifactBaseName}.${suffix}.wasm`)

@@ -138,6 +138,8 @@ export function loadConfigFromCli(cliOpts = {}) {
         typeof cliOpts.simd === 'boolean'
           ? cliOpts.simd
           : (fileConfig.targets?.simd ?? DEFAULT_CONFIG.targets.simd),
+      simdFeatures: fileConfig.targets?.simdFeatures ?? null,
+      baselineFeatures: fileConfig.targets?.baselineFeatures ?? null,
     },
 
     inline:
