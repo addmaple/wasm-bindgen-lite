@@ -191,9 +191,34 @@ function computeStats(times) {
 }
 
 /**
- * Generate valid base64 test data
+ * Generate test data based on type
  */
-function generateTestData(size, forDecode = false, urlSafe = false) {
+function generateTestData(size, options = {}) {
+  const { forDecode = false, urlSafe = false, dataType = 'random' } = options
+  
+  // For compression benchmarks, use compressible data
+  if (dataType === 'compressible') {
+    // Generate text-like compressible data with repeated patterns
+    const patterns = [
+      'The quick brown fox jumps over the lazy dog. ',
+      'Hello, World! This is a test of compressible data. ',
+      'Lorem ipsum dolor sit amet, consectetur adipiscing elit. ',
+      '{"key": "value", "number": 12345, "active": true}, ',
+    ]
+    const data = new Uint8Array(size)
+    let pos = 0
+    let patternIdx = 0
+    while (pos < size) {
+      const pattern = patterns[patternIdx % patterns.length]
+      const bytes = new TextEncoder().encode(pattern)
+      const copyLen = Math.min(bytes.length, size - pos)
+      data.set(bytes.slice(0, copyLen), pos)
+      pos += copyLen
+      patternIdx++
+    }
+    return data
+  }
+  
   if (!forDecode) {
     // For encode: random bytes
     const data = new Uint8Array(size)
@@ -254,6 +279,9 @@ async function runBenchmarks({ distDir, manifest, exports, benchConfig }) {
       results[variant.name] = { functions: {} }
       
       for (const exp of exports) {
+        // Skip exports marked as bench: false
+        if (exp.bench === false) continue
+        
         const fn = wasm[exp.abi]
         if (!fn) continue
         
@@ -266,7 +294,10 @@ async function runBenchmarks({ distDir, manifest, exports, benchConfig }) {
           // Generate appropriate test data
           const isDecoder = exp.name.toLowerCase().includes('decode')
           const isUrlSafe = exp.name.toLowerCase().includes('url')
-          const testData = generateTestData(size, isDecoder, isUrlSafe)
+          // Use compressible data for compression functions
+          const isCompressor = exp.name.toLowerCase().includes('compress') && !isDecoder
+          const dataType = exp.dataType || (isCompressor ? 'compressible' : 'random')
+          const testData = generateTestData(size, { forDecode: isDecoder, urlSafe: isUrlSafe, dataType })
           const actualInputSize = testData.length
           
           // Calculate output size
