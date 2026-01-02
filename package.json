@@ -1,6 +1,6 @@
 {
   "name": "wasm-bindgen-lite",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "type": "module",
   "description": "CLI tool to build Rust crates into minimal, SIMD-optimized WASM packages with JS loaders",
   "repository": {
