@@ -65,7 +65,7 @@ export function createCore({ exportsList, autoInit, stream }) {
     b.line('let _ready = null;')
     b.line('export function registerInit(fn) { _initFn = fn; }')
     b.blank()
-    b.line('async function ensureReady() {')
+    b.line('export async function ensureReady() {')
     b.indent(() => {
       b.line('if (_ready) return _ready;')
       b.line('if (!_initFn) throw new Error("init not registered");')
