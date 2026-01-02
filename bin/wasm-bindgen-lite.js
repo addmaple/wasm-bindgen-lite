@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { runBuild, runClean, printHelp } from '../src/cli/index.js'
+import { runBuild, runClean, runBenchCmd, printHelp } from '../src/cli/index.js'
 
 function parseArgs(raw) {
   const [command, ...rest] = raw
@@ -51,6 +51,12 @@ function parseArgs(raw) {
       case '--no-update-package-json':
         opts.updatePackageJson = false
         break
+      case '--clean':
+        opts.clean = true
+        break
+      case '--skip-build':
+        opts.skipBuild = true
+        break
       case '--help':
       case '-h':
         opts.help = true
@@ -87,6 +93,11 @@ async function main() {
 
   if (command === 'clean') {
     await runClean(opts)
+    return
+  }
+
+  if (command === 'bench') {
+    await runBenchCmd(opts)
     return
   }
 

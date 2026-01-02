@@ -272,6 +272,35 @@ Specify it in your config:
 
 `wasm-bindgen-lite` automatically compiles your Rust code with SIMD features enabled for the `.simd.wasm` target. The runtime detects support and picks the optimal binary.
 
+#### SIMD-First Lazy Loading
+
+The runtime uses a **SIMD-first, lazy-baseline** loading strategy:
+
+1. **Only the SIMD artifact is fetched initially** (saves bandwidth)
+2. If SIMD instantiation fails (e.g., on older browsers), the baseline is fetched as a fallback
+3. On SIMD-capable environments, the baseline is **never downloaded**
+
+This means most users only download one WASM file instead of both.
+
+#### Forcing a Specific Backend (for Benchmarking)
+
+For consistent performance testing, you can force the runtime to use a specific backend:
+
+```javascript
+import { init, my_transform } from 'my-wasm-pkg'
+
+// Force baseline (non-SIMD) for comparison
+await init({}, { backend: 'base' })
+
+// Force SIMD (will throw if not supported)
+await init({}, { backend: 'simd' })
+
+// Auto-detect (default behavior)
+await init({}, { backend: 'auto' })
+```
+
+This is useful for A/B benchmarking SIMD vs baseline performance in the same environment.
+
 ### Streaming Processing
 
 Use `createTransformStream()` for high-performance data pipelines:
@@ -299,6 +328,55 @@ Options:
   --wasm-opt          Enable wasm-opt (default)
   --wasm-opt-args     Custom args for wasm-opt
 ```
+
+### SIMD Variant Analysis
+
+Build a matrix of WASM variants and analyze SIMD usage:
+
+```bash
+wasm-bindgen-lite bench [options]
+
+Options:
+  --crate <path>      Path to Rust crate (default: ".")
+  --clean             Clean output directory before building
+```
+
+The `bench` command builds variants based on your SIMD feature configuration and produces:
+
+- **Variant matrix**: scalar, autovec, explicit-* (per feature), explicit-all
+- **SIMD analysis**: Counts SIMD opcodes in each variant
+- **Provenance detection**: Identifies compiler-added vs explicit SIMD instructions
+- **Reports**: JSON and HTML reports in `bench_out/`
+
+#### SIMD Configuration
+
+Add this to your `wasm-bindgen-lite.config.json`:
+
+```json
+{
+  "simd": {
+    "features": {
+      "explicit-simd-encode": { "name": "encode" },
+      "explicit-simd-decode": { "name": "decode" }
+    },
+    "allFeature": "explicit-simd"
+  },
+  "bench": {
+    "outputDir": "bench_out"
+  }
+}
+```
+
+This generates 5 variants:
+- **scalar**: No SIMD (`opt-level=3` only)
+- **autovec**: LLVM autovectorization (`+simd128` but no explicit features)
+- **explicit-encode**: `explicit-simd-encode` feature enabled
+- **explicit-decode**: `explicit-simd-decode` feature enabled  
+- **explicit-all**: `explicit-simd` meta-feature (all SIMD)
+
+The provenance analysis shows how many SIMD instructions were added by:
+- **Compiler**: autovec.simd_ops - scalar.simd_ops
+- **Explicit code**: explicit.simd_ops - autovec.simd_ops
 
 ## Examples
 

@@ -5,6 +5,7 @@ import { init, createTransformStream } from './dist/node.js'
 
 const FILE_PATH = './large_bench.txt'
 const SIZE_MB = 20
+const ITERATIONS = 5
 
 /**
  * Generates a large test file if it doesn't already exist.
@@ -82,41 +83,76 @@ async function runJsBench() {
   return { time: performance.now() - t0, lines: lineCount }
 }
 
+const avg = (arr) => arr.reduce((a, b) => a + b.time, 0) / arr.length
+
+async function benchmarkBackend(backend) {
+  // Re-initialize with the specified backend
+  await init({}, { backend })
+
+  console.log(`\nBenchmarking Wasm ${backend.toUpperCase()} (${ITERATIONS} runs)...`)
+  const results = []
+  for (let i = 0; i < ITERATIONS; i++) {
+    results.push(await runWasmBench())
+  }
+  return avg(results)
+}
+
 async function main() {
+  const compareBackends = process.argv.includes('--compare-backends')
+
   ensureBenchFile()
 
-  // Initialize WASM before benchmarking
-  await init()
+  if (compareBackends) {
+    // Compare SIMD vs baseline backends
+    console.log('=== SIMD vs Baseline Comparison ===')
 
-  console.log('Warmup...')
-  await runJsBench()
-  await runWasmBench()
+    // Warmup with auto
+    await init({}, { backend: 'auto' })
+    await runWasmBench()
 
-  const ITERATIONS = 5
-  const avg = (arr) => arr.reduce((a, b) => a + b.time, 0) / arr.length
+    const simdAvg = await benchmarkBackend('simd')
+    const baseAvg = await benchmarkBackend('base')
 
-  console.log(`Benchmarking JS native split (${ITERATIONS} runs)...`)
-  const jsResults = []
-  for (let i = 0; i < ITERATIONS; i++) {
-    jsResults.push(await runJsBench())
+    console.log('\n--- Backend Comparison Results ---')
+    console.log(`File Size:       ${SIZE_MB} MB`)
+    console.log(`Iterations:      ${ITERATIONS}`)
+    console.log(`SIMD Avg Time:   ${simdAvg.toFixed(2)} ms`)
+    console.log(`Base Avg Time:   ${baseAvg.toFixed(2)} ms`)
+    console.log(`SIMD Speedup:    ${(baseAvg / simdAvg).toFixed(2)}x over baseline`)
+    console.log('----------------------------------\n')
+  } else {
+    // Standard benchmark: JS vs WASM (auto)
+    await init()
+
+    console.log('Warmup...')
+    await runJsBench()
+    await runWasmBench()
+
+    console.log(`Benchmarking JS native split (${ITERATIONS} runs)...`)
+    const jsResults = []
+    for (let i = 0; i < ITERATIONS; i++) {
+      jsResults.push(await runJsBench())
+    }
+
+    console.log(`Benchmarking Wasm (auto) split (${ITERATIONS} runs)...`)
+    const wasmResults = []
+    for (let i = 0; i < ITERATIONS; i++) {
+      wasmResults.push(await runWasmBench())
+    }
+
+    const jsAvg = avg(jsResults)
+    const wasmAvg = avg(wasmResults)
+
+    console.log('\n--- Benchmark Results ---')
+    console.log(`File Size:      ${SIZE_MB} MB`)
+    console.log(`Iterations:     ${ITERATIONS}`)
+    console.log(`JS Avg Time:    ${jsAvg.toFixed(2)} ms`)
+    console.log(`Wasm Avg Time:  ${wasmAvg.toFixed(2)} ms`)
+    console.log(`Speedup:        ${(jsAvg / wasmAvg).toFixed(2)}x`)
+    console.log('-------------------------\n')
+
+    console.log('Tip: Run with --compare-backends to compare SIMD vs baseline')
   }
-
-  console.log(`Benchmarking Wasm SIMD split (${ITERATIONS} runs)...`)
-  const wasmResults = []
-  for (let i = 0; i < ITERATIONS; i++) {
-    wasmResults.push(await runWasmBench())
-  }
-
-  const jsAvg = avg(jsResults)
-  const wasmAvg = avg(wasmResults)
-
-  console.log('\n--- Benchmark Results ---')
-  console.log(`File Size:      ${SIZE_MB} MB`)
-  console.log(`Iterations:     ${ITERATIONS}`)
-  console.log(`JS Avg Time:    ${jsAvg.toFixed(2)} ms`)
-  console.log(`Wasm Avg Time:  ${wasmAvg.toFixed(2)} ms`)
-  console.log(`Speedup:        ${(jsAvg / wasmAvg).toFixed(2)}x`)
-  console.log('-------------------------\n')
 }
 
 main().catch(console.error)

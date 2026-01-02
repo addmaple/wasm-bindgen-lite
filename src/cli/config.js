@@ -184,6 +184,12 @@ export function loadConfigFromCli(cliOpts = {}) {
       version:
         fileConfig.wasmDelivery?.version ?? fileConfig.version ?? 'latest',
     },
+
+    // SIMD variant configuration
+    simd: fileConfig.simd ?? null,
+
+    // Benchmark configuration
+    bench: fileConfig.bench ?? null,
   }
 
   return config

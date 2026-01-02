@@ -3,6 +3,7 @@ import { loadConfigFromCli, summarizeConfig } from './config.js'
 import { buildArtifacts } from './build.js'
 import { emitRuntime } from './emit.js'
 import { updatePackageJson } from './pkg.js'
+import { runBench } from './bench.js'
 
 export async function runBuild(cliOpts) {
   const cfg = loadConfigFromCli(cliOpts)
@@ -56,12 +57,19 @@ export async function runClean(cliOpts) {
   }
 }
 
+export async function runBenchCmd(cliOpts) {
+  const cfg = loadConfigFromCli(cliOpts)
+  console.log('Configuration:', summarizeConfig(cfg))
+  await runBench(cfg, cliOpts)
+}
+
 export function printHelp() {
   const help = `
 wasm-bindgen-lite <command> [options]
 
 Commands:
   build         Build wasm artifacts and emit JS loaders (default release)
+  bench         Build variant matrix and run SIMD analysis
   clean         Remove the configured output directory
   help          Show this message
 
@@ -74,7 +82,27 @@ Options (for build):
   --simd | --no-simd     Build SIMD variant (default: simd on)
   --wasm-opt | --no-wasm-opt  Force enable/disable wasm-opt (default: auto detect)
   --wasm-opt-args "<args>"    Extra args, default "-Oz"
-  --no-update-package-json     Do not modify package.json exports (default: updates if package.json exists)
+  --no-update-package-json     Do not modify package.json exports
+
+Options (for bench):
+  --crate <path>         Crate root (default: .)
+  --config <path>        Path to config JSON
+  --clean                Clean output directory before building
+  --skip-build           Skip building, use existing variants
+
+SIMD Configuration (in wasm-bindgen-lite.config.json):
+  {
+    "simd": {
+      "features": {
+        "explicit-simd-encode": { "name": "encode" },
+        "explicit-simd-decode": { "name": "decode" }
+      },
+      "allFeature": "explicit-simd"
+    },
+    "bench": {
+      "outputDir": "bench_out"
+    }
+  }
 `
   console.log(help)
 }

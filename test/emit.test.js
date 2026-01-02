@@ -89,14 +89,20 @@ test('createLoader should use the unified template', () => {
   const loader = createLoader({
     exportFrom: './core.js',
     autoInit: 'eager',
-    getBytesSrc: 'const getBytes = () => ({ simdBytes: [], baseBytes: [] });',
+    getBytesSrc: `
+async function getSimdBytes() { return new Uint8Array(); }
+async function getBaseBytes() { return new Uint8Array(); }
+`,
   })
 
   assert.ok(
     loader.includes('import { setInstance, registerInit } from "./core.js"')
   )
   assert.ok(
-    loader.includes('const { simdBytes, baseBytes } = await getWasmBytes()')
+    loader.includes('import { instantiateWithBackend } from "./util.js"')
+  )
+  assert.ok(
+    loader.includes('await instantiateWithBackend({ getSimdBytes, getBaseBytes, imports, backend })')
   )
   assert.ok(loader.includes('registerInit(init);'))
   assert.ok(loader.includes('init();'))

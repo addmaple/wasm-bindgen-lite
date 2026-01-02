@@ -1,0 +1,17 @@
+{
+  "name": "wasm-simd-bench",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "WASM SIMD benchmark suite with provenance detection",
+  "scripts": {
+    "build": "node scripts/build-variants.js",
+    "bench": "node bench.mjs",
+    "detect": "node scripts/run-simd-detect.mjs",
+    "merge": "node scripts/merge-reports.mjs",
+    "all": "node scripts/run-all.mjs",
+    "clean": "rm -rf dist bench_out simd_out"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

@@ -452,7 +452,10 @@ export function code() {
 }
 
 export function createLoaderTypes({ exportFrom }) {
-  return `export function init(imports?: WebAssembly.Imports): Promise<void>;
+  return `export interface InitOptions {
+  backend?: 'auto' | 'simd' | 'base';
+}
+export function init(imports?: WebAssembly.Imports, opts?: InitOptions): Promise<void>;
 export * from "${exportFrom}";
 `
 }
@@ -464,14 +467,17 @@ export function createLoader({ exportFrom, autoInit, getBytesSrc }) {
       : '\nregisterInit(init);'
 
   return `import { setInstance, registerInit } from "./core.js";
-import { instantiateWithFallback } from "./util.js";
+import { instantiateWithBackend } from "./util.js";
 ${getBytesSrc}
 
 let _ready = null;
-export function init(imports = {}) {
-  return (_ready ??= (async () => {
-    const { simdBytes, baseBytes } = await getWasmBytes();
-    const { instance } = await instantiateWithFallback(simdBytes, baseBytes, imports);
+let _backend = null;
+export function init(imports = {}, opts = {}) {
+  const backend = opts.backend || 'auto';
+  if (_ready && _backend === backend) return _ready;
+  _backend = backend;
+  return (_ready = (async () => {
+    const { instance } = await instantiateWithBackend({ getSimdBytes, getBaseBytes, imports, backend });
     setInstance(instance);
   })());
 }
@@ -498,10 +504,14 @@ function createBrowserLoader({ name, autoInit, customJs, wasmDelivery }) {
 const simdUrl = ${simdUrl};
 const baseUrl = ${baseUrl};
 
-async function getWasmBytes() {
-  const [simdRes, baseRes] = await Promise.all([fetch(simdUrl), fetch(baseUrl)]);
-  const [simdBytes, baseBytes] = await Promise.all([simdRes.arrayBuffer(), baseRes.arrayBuffer()]);
-  return { simdBytes, baseBytes };
+async function getSimdBytes() {
+  const res = await fetch(simdUrl);
+  return res.arrayBuffer();
+}
+
+async function getBaseBytes() {
+  const res = await fetch(baseUrl);
+  return res.arrayBuffer();
 }
 `
   return createLoader({ exportFrom, autoInit, getBytesSrc })
@@ -516,9 +526,12 @@ import { fileURLToPath } from "node:url";
 const simdPath = fileURLToPath(new URL("./wasm/${name}.simd.wasm", import.meta.url));
 const basePath = fileURLToPath(new URL("./wasm/${name}.base.wasm", import.meta.url));
 
-async function getWasmBytes() {
-  const [simdBytes, baseBytes] = await Promise.all([readFile(simdPath), readFile(basePath)]);
-  return { simdBytes, baseBytes };
+async function getSimdBytes() {
+  return readFile(simdPath);
+}
+
+async function getBaseBytes() {
+  return readFile(basePath);
 }
 `
   return createLoader({ exportFrom, autoInit, getBytesSrc })
@@ -527,11 +540,15 @@ async function getWasmBytes() {
 function createInlineLoader({ name, autoInit, customJs }) {
   const exportFrom = customJs ? './custom.js' : './core.js'
   const getBytesSrc = `
-import { wasmBytes as simdBytes } from "./wasm-inline/${name}.simd.wasm.js";
-import { wasmBytes as baseBytes } from "./wasm-inline/${name}.base.wasm.js";
+import { wasmBytes as _simdBytes } from "./wasm-inline/${name}.simd.wasm.js";
+import { wasmBytes as _baseBytes } from "./wasm-inline/${name}.base.wasm.js";
 
-async function getWasmBytes() {
-  return { simdBytes, baseBytes };
+async function getSimdBytes() {
+  return _simdBytes;
+}
+
+async function getBaseBytes() {
+  return _baseBytes;
 }
 `
   return createLoader({ exportFrom, autoInit, getBytesSrc })
